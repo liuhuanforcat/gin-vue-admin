@@ -153,4 +153,20 @@ service.interceptors.response.use(
     return error
   }
 )
+
+//封装简化axious请求
+export const get = (url, params) =>
+  service.get(url, { params })
+
+export const post = (url, data = {}) =>
+  service.post(url, data).then((res) => res.data)
+
+export const put = (url, data = {}) =>
+  service.put(url, data).then((res) => res.data)
+
+export const patch = (url, data = {}) =>
+  service.patch(url, data).then((res) => res.data)
+
+export const del = (url) =>
+  service.delete(url).then((res) => res.data)
 export default service

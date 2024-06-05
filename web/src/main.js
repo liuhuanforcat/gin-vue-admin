@@ -17,11 +17,13 @@ import { store } from '@/pinia'
 import App from './App.vue'
 import { initDom } from './utils/positionToCode'
 
+import ECharts from 'vue-echarts'
+import "echarts";
 initDom()
 
 const app = createApp(App)
 app.config.productionTip = false
-
+app.component('ECharts',ECharts)  
 app
     .use(run)
     .use(store)
