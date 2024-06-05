@@ -35,7 +35,9 @@ export function formatTimeToStr(times, pattern) {
 export function formatTimestamp(times) {
  if(times[0]){
   return {start: Math.floor(times[0].getTime()/1000),end:Math.floor(times[1].getTime()/1000)}
- }else{
+ }else if(times){
   return {time:Math.floor(times.getTime()/1000)}
+ }else{
+  return undefined
  }
 }

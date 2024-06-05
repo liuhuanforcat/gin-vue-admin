@@ -1,304 +1,42 @@
 <template>
-  <div class="gva-table-box">
-    <el-form :model="form" label-width="auto">
-      <el-form-item>
-        <el-checkbox-group v-model="form.type">
-          <el-checkbox value="1" name="type">
-            Use local time
-          </el-checkbox>
-          <el-checkbox value="2" name="type">
-            Enable query history
-          </el-checkbox>
-          <el-checkbox value="3" name="type">
-            Enable autocomplete
-          </el-checkbox>
-          <el-checkbox value="4" name="type">
-            Enable highlighting
-          </el-checkbox>
-          <el-checkbox value="6" name="type">
-            Enable linter
-          </el-checkbox>
-        </el-checkbox-group>
-      </el-form-item>
-      <el-form-item>
-        <ExecuteInput @submitInput="onSubmit" ref="inputRef">
-        </ExecuteInput>
-      </el-form-item>
-    </el-form>
-    <el-tabs v-model="activeName" @tab-click="handleClick" type="border-card">
-
-      <el-tab-pane label="Table" name="first">
-
-        <el-form-item>
-          <el-date-picker v-model="form.date1" type="datetime" placeholder="Select date and time" clearable=true />
-        </el-form-item>
-
-        <div>
-          <el-row v-for="(item, index) in tableData" :key="index">
-            <el-col :span="12" class="describe-row">{{ item.metric.__name__ }}{address:"{{ item.metric.address }}"
-              ,ident:"{{ item.metric.ident }}"}</el-col>
-            <el-col :span="12" class="describe-row" style="text-align: right;">
-              {{
-                item.value[1]
-              }}
-            </el-col>
-          </el-row>
-        </div>
-
-      </el-tab-pane>
-      <el-tab-pane label="Graph" name="second">
-
-        <div>
-          <el-row>
-            <el-col :span="3">
-              <el-input-number v-model="step" @change="handleChange" />
-            </el-col>
-            <el-col :span="7">
-              <el-date-picker v-model="dateRangeRef" type="datetimerange" :shortcuts="shortcuts" range-separator="To"
-                start-placeholder="Start date" end-placeholder="End date" format="YYYY-MM-DD HH:mm:ss" />
-            </el-col>
-            <el-col :span="2">
-              <el-button-group class="ml-4">
-                <el-button type="primary" :icon="Edit" />
-                <el-button type="primary" :icon="Share" />
-              </el-button-group>
-            </el-col>
-            <el-col :span="4">
-              <el-input v-model="num" :min="1" :max="10" @change="handleChange" />
-            </el-col>
-            <el-col :span="1" :offset="1">
-              <el-button type="primary" :icon="Edit" />
-            </el-col>
-            <el-col :span="1">
-              <el-button type="primary" :icon="Edit" />
-            </el-col>
-          </el-row>
-        </div>
-
-        <div id="chartContainer" class="chars-box-layout">
-        </div>
-
-        <el-table :data="tableRangeDatasource" style="width: 100%">
-          <el-table-column prop="series" label="Series (2)" width="680" :show-overflow-tooltip="true" />
-          <el-table-column prop="max" label="最大值" :default-sort="{ prop: 'max', order: 'descending' }" sortable
-            width="180" />
-          <el-table-column prop="min" label="最小值" :default-sort="{ prop: 'min', order: 'descending' }" sortable />
-          <el-table-column prop="avg" label="平均值" :default-sort="{ prop: 'avg', order: 'descending' }" sortable />
-          <el-table-column prop="total" label="汇总值" :default-sort="{ prop: 'total', order: 'descending' }" sortable />
-          <el-table-column prop="current" label="当前值" :default-sort="{ prop: 'current', order: 'descending' }"
-            sortable />
-        </el-table>
-      </el-tab-pane>
-
-    </el-tabs>
-    <el-row>
-      <el-col :span="12">
-        <el-button type="primary" @click="onSubmit">添加面板</el-button>
-      </el-col>
-      <el-col :span="12" style="text-align: right;">
-        <el-button>删除面板</el-button>
-      </el-col>
-    </el-row>
-
+  <div>
+    <div class="panel-cart-box" v-for="(item,index) in panelNum" :key="item.uuid">
+      <PanelTemplate :index="index"/>
+      <el-row>
+        <el-col :span="12">
+          <el-button v-if="index===panelNum.length-1" type="primary" @click="handleAddClick">添加面板</el-button>
+        </el-col>
+        <el-col :span="12" style="text-align: right;">
+          <el-button v-if="index!==0"  @click="() => handleDelClick(item)">删除面板</el-button>
+        </el-col>
+      </el-row>
+    </div>
   </div>
-
 </template>
 <script setup>
-import { onMounted, reactive, ref, watchEffect } from "vue";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Delete,
-  Edit,
-  Share,
-} from '@element-plus/icons-vue'
-import ExecuteInput from '@/view/monitoringPanel/component/ExecuteInput.vue'
-import { Chart } from '@antv/g2';
-import service from '@/utils/request';
-import { getData, getDataRange } from '@/api/peregrine'
-import { formatTimestamp } from '@/utils/date'
-import { useAsyncState } from '@vueuse/core'
-const form = reactive({
-  name: "",
-  region: "",
-  date1: "",
-  date2: "",
-  delivery: false,
-  type: [],
-  resource: "",
-  desc: "",
-});
+import PanelTemplate from '@/view/monitoringPanel/component/panelTemplate.vue';
+import _ from 'lodash';
+import { ref } from "vue";
 
-const dateRangeRef = ref()
-const activeName = ref('first')
-
-const isGroupFlag = ref(false)
-//g2图
-const chartContainer = ref(null);
-
-const queryRangeDatasource = ref();
-//输入框
-const inputRef = ref(null);
-
-const step = ref();
-//charsSerach
-const num = ref(1)
-const tableData = ref([])
-
-const tableRangeDatasource = ref([])
-const handleChange = (value) => {
-  console.log(value)
+//面板数量对象
+const panelNum = ref([
+  {
+    uuid: _.uniqueId('panel_'),
+  },
+])
+const handleAddClick = () => {
+  console.log(123)
+  panelNum.value = [...panelNum.value, { uuid: _.uniqueId('panel_') }]
 }
-
-const queryRanage = () => {
-  return getDataRange({
-    query: inputRef.value.promQLInputRef.editor.contentDOM.outerText,
-    step: step.value,
-    ...formatTimestamp(dateRangeRef.value),
-  }).then((res) => {
-    queryRangeDatasource.value = res.data.data.result.map((res) => {
-      return res.values.map((item) => [...item, res.metric.address])
-    }).flat().map(item => ({
-      timestamp: item[0] * 1000,
-      value: Number(item[1]),
-      type: item[2]
-    }))
-
-    tableRangeDatasource.value = res.data.data.result.map((item) => {
-      return {
-        series: `${item.metric.__name__}{address="${item.metric.address},ident="${item.metric.ident}""}`,
-        max: Math.max(...item.values.map((item) => item[1])),
-        min: Math.min(...item.values.map((item) => item[1])),
-        avg: item.values.map((item) => Number(item[1])).reduce((acc, val) => acc + val, 0) / item.values.length,
-        total: item.values.map((item) => Number(item[1])).reduce((acc, val) => acc + val, 0),
-        current: item.values.map((item) => Number(item[1]))[0] || 0
-      }
-    })
-  })
-
-
+const handleDelClick=(obj)=>{
+  panelNum.value = panelNum.value.filter((item)=>obj.uuid!==item.uuid)
 }
-
-const queryData = () => {
-  console.log(formatTimestamp(form.date1))
-  return getData({ query: inputRef.value.promQLInputRef.editor.contentDOM.outerText ,...formatTimestamp(form.date1)}).then((res) => {
-    console.log(res?.data?.data)
-    tableData.value = res?.data?.data.result
-    return res?.data?.data
-  })
-}
-
-
-watchEffect(() => {
-  if (activeName.value === 'second' || queryRangeDatasource.value) {
-    const data = [
-      { type: 'A', month: 'Jan', value: 30 },
-      { type: 'A', month: 'Feb', value: 30 },
-      { type: 'A', month: 'Mar', value: 30 },
-      { type: 'A', month: 'Apr', value: 30 },
-      { type: 'B', month: 'Jan', value: 50 },
-      { type: 'B', month: 'Feb', value: 50 },
-      { type: 'B', month: 'Mar', value: 50 },
-      { type: 'B', month: 'Apr', value: 50 },
-    ];
-    const chart = new Chart({
-      container: 'chartContainer',
-      autoFit: true, // 自适应容器尺寸
-      height: 400,
-      forceFit: true,
-      paddingRight: 50,
-      paddingTop: 50
-    });
-    chart
-      .line()
-      .data(queryRangeDatasource.value)
-      .encode('x', 'timestamp')
-      .encode('y', 'value')
-      .encode('shape', 'hv')
-      .encode('series', 'type')
-      .encode('color', 'type')
-      .scale('x', {
-        range: [0, 1],
-      })
-      .scale('y', {
-        nice: true,
-      })
-
-    chart.scale('x', {
-      type: 'time', // 指定为时间类型  
-      mask: 'YYYY-MM-DD HH:mm:ss', // 可选的日期格式掩码  
-      tickCount: 5 // 刻度数量，可根据需要调整  
-    })
-
-    chart.render();
-  }
-});
-watchEffect(() => {
-  if (step.value && dateRangeRef.value) {
-    queryRanage()
-  }
-})
-
-
-const onSubmit = (e) => {
-  if (activeName.value === "second") {
-    queryRanage()
-  } else {
-    queryData()
-  }
-}
-
-const handleClick = (tab) => {
-  if (tab.props.name === "second") {
-    queryRanage()
-  } else {
-    queryData()
-  }
-}
-
 </script>
-<style lang="scss" scoped>
-.after-box {
-  width: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  // background-color: #FFF !important
-}
-
-.after-img {
-  width: 24px;
-  height: 24px;
-}
-
-.after-button {
-  background-color: #007bff;
-  color: #FFF !important;
-}
-
-
-.demo-tabs {
-  width: 100%;
-}
-
-.chars-box-layout {
-  // width: calc(100vw - 250px);
-  widows: 100%;
-  height: 400px;
-  // overflow: auto;
-}
-
-.chars-box-layout {
-  display: flex;
-  justify-content: flex-start;
-
-  &>* {
-    padding-left: 24px;
-  }
-
-}
-
-.describe-row {
-  height: 30px;
+<style lang="scss">
+.panel-cart-box {
+  margin: 24px;
+  padding: 24px;
+  background-color:#fff;
+  border: 1px solid  #dcdfe6;
 }
 </style>

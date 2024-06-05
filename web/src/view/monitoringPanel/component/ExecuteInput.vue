@@ -3,6 +3,7 @@
         <PromQLInput ref="promQLInputRef"/>
         <div class="after-box">
             <el-space   direction="horizontal" alignment="start" :size="20">
+                <el-button type="primary" :icon="Search">Search</el-button>
                 <el-button @click="onClick">新手模式</el-button>
                 <el-button type="primary" @click="onClick">Execute</el-button>
             </el-space>
@@ -34,23 +35,6 @@ defineExpose({promQLInputRef});
 .after-box{
     padding-left: 20px;
 }
-    ::v-deep(.el-button) {
-        border-top-left-radius: 0;
-        /* 右上角 */
-        border-bottom-left-radius: 0;
-        /* 右下角 */
-        height: calc(98% + 1px);
-
-    }
-
-    ::v-deep(.el-input__wrapper) {
-        border-top-right-radius: 0;
-        /* 右上角 */
-        border-bottom-right-radius: 0;
-        /* 右下角 */
-        padding: 0 11px;
-        box-sizing: border-box;
-    }
 
 
 }
