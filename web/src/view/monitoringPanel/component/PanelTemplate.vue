@@ -35,7 +35,7 @@
 
         <div>
           <el-row v-for="(item, index) in tableData" :key="index" class="describe-row">
-            <el-col :span="12">{{ item.metric.__name__ }}{address:"{{ item.metric.address }}"
+            <el-col :span="12">{{ item?.metric?.__name__ ||''}}{address:"{{ item?.metric?.address||'' }}"
               ,ident:"{{ item.metric.ident }}"}</el-col>
             <el-col :span="12" style="text-align: right;">
               {{
@@ -85,7 +85,7 @@
         </div>
 
         <el-table :data="tableRangeDatasource" style="width: 100%">
-          <el-table-column prop="series" :label="`Series ${tableRangeDatasource.length}`" width="680"
+          <el-table-column prop="series" :label="`Series ${tableRangeDatasource?.length||0}`" width="680"
             :show-overflow-tooltip="true" />
           <el-table-column prop="max" label="最大值" :default-sort="{ prop: 'max', order: 'descending' }" sortable
             width="180" />
@@ -162,21 +162,20 @@ const handleChange = (value) => {
 
 const queryRanage = () => {
   return getDataRange({
-    query: inputRef.value.promQLInputRef.editor.contentDOM.outerText,
+    query: inputRef.value.promQLInputRef.editor.state.doc.toString(),
     step: step.value,
     ...formatTimestamp(dateRangeRef.value),
   }).then((res) => {
-    queryRangeDatasource.value = res.data.data.result.map((res) => {
+    queryRangeDatasource.value = res?.data?.data?.result.map((res) => {
       return res.values.map((item) => [...item, res.metric.ident])
     }).flat().map(item => ({
       timestamp: item[0] * 1000,
       value: Number(item[1]),
       type: item[2]
     }))
-
-    tableRangeDatasource.value = res.data.data.result.map((item) => {
+    tableRangeDatasource.value = res?.data?.data?.result?.map((item) => {
       return {
-        series: `${item.metric.__name__}{address="${item.metric.address||''},ident="${item.metric.ident}""}`,
+        series: `${item?.metric?.__name__||''}{address="${item?.metric?.address||''},ident="${item.metric.ident}""}`,
         max: Math.max(...item.values.map((item) => item[1])),
         min: Math.min(...item.values.map((item) => item[1])),
         avg: item.values.map((item) => Number(item[1])).reduce((acc, val) => acc + val, 0) / item.values.length,
@@ -185,13 +184,11 @@ const queryRanage = () => {
       }
     })
   })
-
-
 }
 
 const queryData = () => {
-  console.log(formatTimestamp(form.date1))
-  return getData({ query: inputRef.value.promQLInputRef.editor.contentDOM.outerText, ...formatTimestamp(form.date1) }).then((res) => {
+  console.log(inputRef.value)
+  return getData({ query: inputRef.value.promQLInputRef.editor.state.doc.toString(), ...formatTimestamp(form.date1) }).then((res) => {
     console.log(res?.data?.data)
     tableData.value = res?.data?.data.result
     return res?.data?.data
@@ -243,12 +240,12 @@ watchEffect(() => {
     chart.render();
   }
 });
+
 watchEffect(() => {
   if (step.value && dateRangeRef.value) {
     queryRanage()
   }
 })
-
 
 const onSubmit = (e) => {
   if (activeName.value === "second") {
@@ -265,15 +262,14 @@ const handleClick = (tab) => {
     queryData()
   }
 }
-
 </script>
+
 <style lang="scss" scoped>
 .after-box {
   width: 200px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  // background-color: #FFF !important
 }
 
 .after-img {
@@ -292,10 +288,8 @@ const handleClick = (tab) => {
 }
 
 .chars-box-layout {
-  // width: calc(100vw - 250px);
   widows: 100%;
   height: 200px;
-  // overflow: auto;
 }
 
 .chars-box-layout {

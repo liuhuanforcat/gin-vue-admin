@@ -25,12 +25,12 @@ const panelNum = ref([
   },
 ])
 const handleAddClick = () => {
-  console.log(123)
   panelNum.value = [...panelNum.value, { uuid: _.uniqueId('panel_') }]
 }
 const handleDelClick=(obj)=>{
   panelNum.value = panelNum.value.filter((item)=>obj.uuid!==item.uuid)
 }
+
 </script>
 <style lang="scss">
 .panel-cart-box {
