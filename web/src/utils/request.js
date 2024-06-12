@@ -173,7 +173,7 @@ export default service
 export const remove = (url, data = {}) => {
   if (data) {
     console.log(data)
-  }
+  } 
 
   return service.delete(url, data).then((res) => res.data)
 }
