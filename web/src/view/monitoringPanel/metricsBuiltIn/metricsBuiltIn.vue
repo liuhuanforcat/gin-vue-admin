@@ -86,6 +86,8 @@ import Table from './Table.vue';
         line-height: 1.5715;
         list-style: none;
         font-feature-settings: "tnum";
+        overflow: hidden;
+        padding: 24px;
     }
 
 

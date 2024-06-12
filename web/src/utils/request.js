@@ -168,5 +168,12 @@ export const patch = (url, data = {}) =>
   service.patch(url, data).then((res) => res.data)
 
 export const del = (url) =>
-  service.delete(url).then((res) => res.data)
+  service.delete(url).then((res) => res)
 export default service
+export const remove = (url, data = {}) => {
+  if (data) {
+    console.log(data)
+  }
+
+  return service.delete(url, data).then((res) => res.data)
+}
